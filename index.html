@@ -27,6 +27,18 @@
         const database = getDatabase(app);
         const callsRef = ref(database, 'missedCalls');
 
+        // Format time from 24hr to 12hr AM/PM format
+        function formatTimeToAMPM(timeString) {
+            if (!timeString) return '';
+            
+            const [hours, minutes] = timeString.split(':');
+            let hour = parseInt(hours, 10);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            hour = hour % 12;
+            hour = hour ? hour : 12; // the hour '0' should be '12'
+            return `${hour}:${minutes} ${ampm}`;
+        }
+
         // Make functions available globally
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(content => {
@@ -51,7 +63,7 @@
             const newCall = {
                 phoneNumber: phoneNumber,
                 fileNumber: fileNumber,
-                callTime: callTime,
+                callTime: callTime, // Store in 24hr format for sorting
                 timestamp: Date.now(),
                 status: 'pending',
                 collector: ''
@@ -131,15 +143,15 @@
             for (const callId in calls) {
                 const call = calls[callId];
                 
-                // Format the time for display
-                const time = call.callTime;
+                // Format the time for display in AM/PM format
+                const displayTime = formatTimeToAMPM(call.callTime);
                 
                 // Create row for manager view
                 const managerRow = document.createElement('tr');
                 managerRow.innerHTML = `
                     <td>${call.phoneNumber}</td>
                     <td>${call.fileNumber}</td>
-                    <td>${time}</td>
+                    <td>${displayTime}</td>
                     <td class="${call.status === 'pending' ? 'status-pending' : 'status-completed'}">
                         ${call.status === 'pending' ? 'Pending' : 'Completed'}
                     </td>
@@ -155,7 +167,7 @@
                 collectorRow.innerHTML = `
                     <td>${call.phoneNumber}</td>
                     <td>${call.fileNumber}</td>
-                    <td>${time}</td>
+                    <td>${displayTime}</td>
                     <td class="${call.status === 'pending' ? 'status-pending' : 'status-completed'}">
                         ${call.status === 'pending' ? 'Pending' : 'Completed'}
                     </td>
