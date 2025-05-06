@@ -196,20 +196,20 @@
     <script>
         // Initialize Firebase
         // You will need to replace this with your Firebase configuration
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const callsRef = database.ref('missedCalls');
+const firebaseConfig = {
+    apiKey: "AIzaSyAefUU9sDo7cbueijGtP3sLSbn-9rYVmnI",
+    authDomain: "missed-call-system.firebaseapp.com",
+    databaseURL: "https://missed-call-system-default-rtdb.firebaseio.com",
+    projectId: "missed-call-system",
+    storageBucket: "missed-call-system.firebasestorage.app",
+    messagingSenderId: "1077031814248",
+    appId: "1:1077031814248:web:de68f2ee4841abb94d67dd",
+    measurementId: "G-4VTTHR286J"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
         
         // Tab switching functionality
         function switchTab(tabId) {
