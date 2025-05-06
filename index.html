@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missed Call System</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="tel"], input[type="time"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .status-pending {
+            color: red;
+            font-weight: bold;
+        }
+        .status-completed {
+            color: green;
+        }
+        .responsive-table {
+            overflow-x: auto;
+        }
+        .action-cell {
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            th, td {
+                padding: 8px 5px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Missed Call System</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('manager')">Manager</div>
+            <div class="tab" onclick="switchTab('collector')">Collector</div>
+        </div>
+        
+        <div id="manager" class="tab-content active">
+            <h2>Add Missed Call</h2>
+            <form id="missedCallForm">
+                <div class="form-group">
+                    <label for="phoneNumber">Phone Number:</label>
+                    <input type="tel" id="phoneNumber" required placeholder="Enter phone number">
+                </div>
+                <div class="form-group">
+                    <label for="fileNumber">File Number:</label>
+                    <input type="text" id="fileNumber" required placeholder="Enter file number">
+                </div>
+                <div class="form-group">
+                    <label for="callTime">Call Time:</label>
+                    <input type="time" id="callTime" required>
+                </div>
+                <button type="submit">Add Missed Call</button>
+            </form>
+            
+            <h2>Manage Calls</h2>
+            <button onclick="clearAllCalls()">Clear All Calls</button>
+            <div class="responsive-table">
+                <table id="managerCallTable">
+                    <thead>
+                        <tr>
+                            <th>Phone Number</th>
+                            <th>File Number</th>
+                            <th>Call Time</th>
+                            <th>Status</th>
+                            <th>Collector</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="managerCallList">
+                        <!-- Call data will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="collector" class="tab-content">
+            <h2>Missed Calls</h2>
+            <div class="form-group">
+                <label for="collectorName">Your Name:</label>
+                <input type="text" id="collectorName" placeholder="Enter your name">
+            </div>
+            <div class="responsive-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Phone Number</th>
+                            <th>File Number</th>
+                            <th>Call Time</th>
+                            <th>Status</th>
+                            <th>Collector</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="collectorCallList">
+                        <!-- Call data will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase
+        // You will need to replace this with your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const callsRef = database.ref('missedCalls');
+        
+        // Tab switching functionality
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+        }
+        
+        // Add a new missed call
+        document.getElementById('missedCallForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const fileNumber = document.getElementById('fileNumber').value;
+            const callTime = document.getElementById('callTime').value;
+            
+            const newCall = {
+                phoneNumber: phoneNumber,
+                fileNumber: fileNumber,
+                callTime: callTime,
+                timestamp: Date.now(),
+                status: 'pending',
+                collector: ''
+            };
+            
+            callsRef.push(newCall)
+                .then(() => {
+                    document.getElementById('missedCallForm').reset();
+                    alert('Missed call added successfully!');
+                })
+                .catch(error => {
+                    console.error("Error adding missed call: ", error);
+                    alert('Error adding missed call: ' + error.message);
+                });
+        });
+        
+        // Mark a call as completed
+        function markAsCompleted(callId) {
+            const collectorName = document.getElementById('collectorName').value;
+            if (!collectorName) {
+                alert('Please enter your name before marking calls as completed.');
+                return;
+            }
+            
+            callsRef.child(callId).update({
+                status: 'completed',
+                collector: collectorName
+            })
+            .then(() => {
+                alert('Call marked as completed!');
+            })
+            .catch(error => {
+                console.error("Error updating call: ", error);
+                alert('Error updating call: ' + error.message);
+            });
+        }
+        
+        // Delete a call
+        function deleteCall(callId) {
+            if (confirm('Are you sure you want to delete this call?')) {
+                callsRef.child(callId).remove()
+                    .then(() => {
+                        alert('Call deleted successfully!');
+                    })
+                    .catch(error => {
+                        console.error("Error deleting call: ", error);
+                        alert('Error deleting call: ' + error.message);
+                    });
+            }
+        }
+        
+        // Clear all calls (for daily reset)
+        function clearAllCalls() {
+            if (confirm('Are you sure you want to clear ALL calls? This cannot be undone.')) {
+                callsRef.remove()
+                    .then(() => {
+                        alert('All calls cleared successfully!');
+                    })
+                    .catch(error => {
+                        console.error("Error clearing calls: ", error);
+                        alert('Error clearing calls: ' + error.message);
+                    });
+            }
+        }
+        
+        // Load calls and listen for changes
+        callsRef.on('value', snapshot => {
+            const calls = snapshot.val() || {};
+            
+            // Clear existing lists
+            document.getElementById('managerCallList').innerHTML = '';
+            document.getElementById('collectorCallList').innerHTML = '';
+            
+            // Populate the lists
+            for (const callId in calls) {
+                const call = calls[callId];
+                
+                // Format the time for display
+                const time = call.callTime;
+                
+                // Create row for manager view
+                const managerRow = document.createElement('tr');
+                managerRow.innerHTML = `
+                    <td>${call.phoneNumber}</td>
+                    <td>${call.fileNumber}</td>
+                    <td>${time}</td>
+                    <td class="${call.status === 'pending' ? 'status-pending' : 'status-completed'}">
+                        ${call.status === 'pending' ? 'Pending' : 'Completed'}
+                    </td>
+                    <td>${call.collector || '-'}</td>
+                    <td class="action-cell">
+                        <button onclick="deleteCall('${callId}')">Delete</button>
+                    </td>
+                `;
+                document.getElementById('managerCallList').appendChild(managerRow);
+                
+                // Create row for collector view
+                const collectorRow = document.createElement('tr');
+                collectorRow.innerHTML = `
+                    <td>${call.phoneNumber}</td>
+                    <td>${call.fileNumber}</td>
+                    <td>${time}</td>
+                    <td class="${call.status === 'pending' ? 'status-pending' : 'status-completed'}">
+                        ${call.status === 'pending' ? 'Pending' : 'Completed'}
+                    </td>
+                    <td>${call.collector || '-'}</td>
+                    <td class="action-cell">
+                        ${call.status === 'pending' ? 
+                            `<button onclick="markAsCompleted('${callId}')">Mark as Called</button>` : 
+                            ''}
+                    </td>
+                `;
+                document.getElementById('collectorCallList').appendChild(collectorRow);
+            }
+        });
+    </script>
+</body>
+</html>
