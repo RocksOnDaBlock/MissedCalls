@@ -38,6 +38,16 @@
             hour = hour ? hour : 12; // the hour '0' should be '12'
             return `${hour}:${minutes} ${ampm}`;
         }
+        
+        // Format date object to time string
+        function formatDateToTimeString(date) {
+            const hours = date.getHours();
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            let hour = hours % 12;
+            hour = hour ? hour : 12; // the hour '0' should be '12'
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            return `${hour}:${minutes} ${ampm}`;
+        }
 
         // Make functions available globally
         window.switchTab = function(tabId) {
@@ -66,7 +76,8 @@
                 callTime: callTime,
                 timestamp: Date.now(),
                 status: 'pending',
-                collector: ''
+                collector: '',
+                completedTime: null
             };
             
             push(callsRef, newCall)
@@ -88,10 +99,15 @@
                 return;
             }
             
+            const now = new Date();
+            const completedTime = formatDateToTimeString(now);
+            
             const callToUpdate = ref(database, 'missedCalls/' + callId);
             update(callToUpdate, {
                 status: 'completed',
-                collector: collectorName
+                collector: collectorName,
+                completedTime: completedTime,
+                completedTimestamp: now.getTime()
             })
             .then(() => {
                 alert('Call marked as completed!');
@@ -146,15 +162,21 @@
                 // Format the time for display in AM/PM format
                 const displayTime = formatTimeToAMPM(call.callTime);
                 
+                // Status display with completion time if available
+                let statusDisplay = '';
+                if (call.status === 'pending') {
+                    statusDisplay = '<span class="status-pending">Pending</span>';
+                } else {
+                    statusDisplay = `<span class="status-completed">Completed at ${call.completedTime || 'unknown time'}</span>`;
+                }
+                
                 // Create row for manager view
                 const managerRow = document.createElement('tr');
                 managerRow.innerHTML = `
                     <td>${call.phoneNumber}</td>
                     <td>${call.fileNumber || '-'}</td>
                     <td>${displayTime}</td>
-                    <td class="${call.status === 'pending' ? 'status-pending' : 'status-completed'}">
-                        ${call.status === 'pending' ? 'Pending' : 'Completed'}
-                    </td>
+                    <td>${statusDisplay}</td>
                     <td>${call.collector || '-'}</td>
                     <td class="action-cell">
                         <button onclick="deleteCall('${callId}')">Delete</button>
@@ -168,9 +190,7 @@
                     <td>${call.phoneNumber}</td>
                     <td>${call.fileNumber || '-'}</td>
                     <td>${displayTime}</td>
-                    <td class="${call.status === 'pending' ? 'status-pending' : 'status-completed'}">
-                        ${call.status === 'pending' ? 'Pending' : 'Completed'}
-                    </td>
+                    <td>${statusDisplay}</td>
                     <td>${call.collector || '-'}</td>
                     <td class="action-cell">
                         ${call.status === 'pending' ? 
