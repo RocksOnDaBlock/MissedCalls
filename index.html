@@ -27,6 +27,19 @@
         const database = getDatabase(app);
         const callsRef = ref(database, 'missedCalls');
 
+        // Function to show status message
+        function showStatusMessage(message, isSuccess = true) {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = isSuccess ? 'status-success' : 'status-error';
+            statusElement.style.display = 'block';
+            
+            // Hide the message after 3 seconds
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+            }, 3000);
+        }
+
         // Format time from 24hr to 12hr AM/PM format
         function formatTimeToAMPM(timeString) {
             if (!timeString) return '';
@@ -67,12 +80,12 @@
             e.preventDefault();
             
             const phoneNumber = document.getElementById('phoneNumber').value;
-            const fileNumber = document.getElementById('fileNumber').value; // This can now be empty
+            const fileNumber = document.getElementById('fileNumber').value;
             const callTime = document.getElementById('callTime').value;
             
             const newCall = {
                 phoneNumber: phoneNumber,
-                fileNumber: fileNumber, // Can be empty string
+                fileNumber: fileNumber,
                 callTime: callTime,
                 timestamp: Date.now(),
                 status: 'pending',
@@ -83,11 +96,11 @@
             push(callsRef, newCall)
                 .then(() => {
                     document.getElementById('missedCallForm').reset();
-                    alert('Missed call added successfully!');
+                    showStatusMessage('Missed call added successfully!', true);
                 })
                 .catch(error => {
                     console.error("Error adding missed call: ", error);
-                    alert('Error adding missed call: ' + error.message);
+                    showStatusMessage('Error adding missed call: ' + error.message, false);
                 });
         });
         
@@ -95,7 +108,7 @@
         window.markAsCompleted = function(callId) {
             const collectorName = document.getElementById('collectorName').value;
             if (!collectorName) {
-                alert('Please enter your name before marking calls as completed.');
+                showStatusMessage('Please enter your name before marking calls as completed.', false);
                 return;
             }
             
@@ -110,11 +123,11 @@
                 completedTimestamp: now.getTime()
             })
             .then(() => {
-                alert('Call marked as completed!');
+                showStatusMessage('Call marked as completed!', true);
             })
             .catch(error => {
                 console.error("Error updating call: ", error);
-                alert('Error updating call: ' + error.message);
+                showStatusMessage('Error updating call: ' + error.message, false);
             });
         };
         
@@ -124,11 +137,11 @@
                 const callToDelete = ref(database, 'missedCalls/' + callId);
                 remove(callToDelete)
                     .then(() => {
-                        alert('Call deleted successfully!');
+                        showStatusMessage('Call deleted successfully!', true);
                     })
                     .catch(error => {
                         console.error("Error deleting call: ", error);
-                        alert('Error deleting call: ' + error.message);
+                        showStatusMessage('Error deleting call: ' + error.message, false);
                     });
             }
         };
@@ -138,11 +151,11 @@
             if (confirm('Are you sure you want to clear ALL calls? This cannot be undone.')) {
                 remove(callsRef)
                     .then(() => {
-                        alert('All calls cleared successfully!');
+                        showStatusMessage('All calls cleared successfully!', true);
                     })
                     .catch(error => {
                         console.error("Error clearing calls: ", error);
-                        alert('Error clearing calls: ' + error.message);
+                        showStatusMessage('Error clearing calls: ' + error.message, false);
                     });
             }
         };
@@ -216,6 +229,7 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
         }
         h1 {
             color: #333;
@@ -304,6 +318,29 @@
         .action-cell {
             text-align: center;
         }
+        #statusMessage {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 4px;
+            z-index: 1000;
+            display: none;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .status-success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .status-error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -312,10 +349,16 @@
                 padding: 8px 5px;
                 font-size: 14px;
             }
+            #statusMessage {
+                width: 80%;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
+    <div id="statusMessage" class="status-success"></div>
+    
     <div class="container">
         <h1>Missed Call System</h1>
         
